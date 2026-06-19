@@ -1,0 +1,142 @@
+* {
+    font-family: "Segoe UI", sans-serif;
+    color: #e8e8ec;
+}
+
+#RootFrame {
+    background-color: #1e1f26;
+    border: 1px solid #34363f;
+    border-radius: 12px;
+}
+
+#TitleLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f5f5f7;
+}
+
+#FieldLabel {
+    font-size: 11px;
+    color: #9aa0ac;
+}
+
+#StatusLabel {
+    font-size: 11px;
+    color: #9aa0ac;
+    padding: 4px 0;
+}
+
+#HotkeyLabel {
+    font-size: 11px;
+    color: #7f8794;
+}
+
+#IconButton {
+    font-size: 14px;
+    padding: 2px 0;
+}
+
+QRadioButton {
+    font-size: 12px;
+    color: #e8e8ec;
+    spacing: 8px;
+    padding: 3px 0;
+}
+
+QRadioButton::indicator {
+    width: 15px;
+    height: 15px;
+    border-radius: 8px;
+    border: 1px solid #4a4d59;
+    background-color: #2a2c35;
+}
+
+QRadioButton::indicator:checked {
+    border: 1px solid #5b8def;
+    background-color: #5b8def;
+}
+
+QRadioButton:hover {
+    color: #ffffff;
+}
+
+#MiniBubble {
+    background-color: #5b8def;
+    border: 1px solid #6f9bf2;
+    border-radius: 29px;
+}
+
+#MiniLabel {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+QComboBox {
+    background-color: #2a2c35;
+    border: 1px solid #3a3d48;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+
+QComboBox:hover {
+    border: 1px solid #5b8def;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #2a2c35;
+    border: 1px solid #3a3d48;
+    selection-background-color: #5b8def;
+    outline: none;
+}
+
+QPushButton {
+    background-color: #2a2c35;
+    border: 1px solid #3a3d48;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+QPushButton:hover {
+    background-color: #343742;
+}
+
+QPushButton:pressed {
+    background-color: #3d4150;
+}
+
+QPushButton#StartButton {
+    background-color: #2e7d57;
+    border: none;
+}
+
+QPushButton#StartButton:hover {
+    background-color: #34925f;
+}
+
+QPushButton#StopButton {
+    background-color: #8c3b3b;
+    border: none;
+}
+
+QPushButton#StopButton:hover {
+    background-color: #a04343;
+}
+
+QPushButton#StartButton:disabled,
+QPushButton#StopButton:disabled {
+    background-color: #3a3d48;
+    color: #6b6f7a;
+}
+
+QCheckBox {
+    font-size: 11px;
+    color: #9aa0ac;
+}
