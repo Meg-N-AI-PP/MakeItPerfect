@@ -62,7 +62,7 @@ class MainWindow(QWidget):
             callback=self._on_hotkey,
         )
         self._drag_offset: QPoint | None = None
-        self._mini = MiniWidget()
+        self._mini = MiniWidget(self._settings.hotkey.pretty)
         self._mini.clicked.connect(self._restore_from_mini)
         self.tray: QSystemTrayIcon | None = None
         self._tray_menu: QMenu | None = None
@@ -254,6 +254,7 @@ class MainWindow(QWidget):
     def _apply_hotkey_change(self, previous_hotkey: str) -> None:
         current_hotkey = self._settings.hotkey.normalized
         self.hotkey_label.setText(f"Hotkey: {self._settings.hotkey.pretty}")
+        self._mini.set_hotkey_text(self._settings.hotkey.pretty)
 
         if current_hotkey == previous_hotkey:
             return
@@ -450,7 +451,7 @@ class MiniWidget(QWidget):
 
     clicked = Signal()
 
-    def __init__(self) -> None:
+    def __init__(self, hotkey_text: str) -> None:
         super().__init__()
         self.setWindowFlags(
             Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint
@@ -463,14 +464,20 @@ class MiniWidget(QWidget):
         frame.setObjectName("MiniBubble")
         frame.setGeometry(0, 0, 58, 58)
         inner = QVBoxLayout(frame)
-        inner.setContentsMargins(0, 0, 0, 0)
-        label = QLabel("AI")
-        label.setObjectName("MiniLabel")
-        label.setAlignment(Qt.AlignCenter)
-        inner.addWidget(label)
+        inner.setContentsMargins(2, 2, 2, 2)
+        self._label = QLabel("")
+        self._label.setObjectName("MiniLabel")
+        self._label.setAlignment(Qt.AlignCenter)
+        self._label.setWordWrap(True)
+        inner.addWidget(self._label)
+        self.set_hotkey_text(hotkey_text)
 
         self._press_offset: QPoint | None = None
         self._moved = False
+
+    def set_hotkey_text(self, hotkey_text: str) -> None:
+        display = hotkey_text.replace("+", "\n+")
+        self._label.setText(display)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.LeftButton:
