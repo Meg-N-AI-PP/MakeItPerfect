@@ -111,7 +111,6 @@ class MainWindow(QWidget):
         self._hide_btn.setFixedWidth(30)
         self._hide_btn.setToolTip("Hide to floating bubble")
         self._hide_btn.clicked.connect(self._hide_to_mini)
-        self._hide_btn.setVisible(not self._settings.ui.always_show_ui)
         header.addWidget(self._hide_btn)
         layout.addLayout(header)
 
@@ -242,11 +241,6 @@ class MainWindow(QWidget):
         if dialog.exec():
             self._refresh_models()
             self._apply_hotkey_change(previous_hotkey)
-            self._hide_btn.setVisible(not self._settings.ui.always_show_ui)
-            if self._settings.ui.always_show_ui:
-                self._mini.hide()
-                self.show()
-                self.raise_()
             self._set_status("Listening" if self._state.is_running else "Idle",
                              "Settings saved")
         self._ensure_tray_visible()
@@ -374,8 +368,11 @@ class MainWindow(QWidget):
         self._ensure_tray_visible()
 
     def _hide_to_mini(self) -> None:
-        """Hide the main window and show the floating bubble instead."""
-        if self._settings.ui.always_show_ui:
+        """Hide the main window and show bubble/tray based on settings."""
+        if not self._settings.ui.minimize_to_bubble:
+            self._mini.hide()
+            self.hide()
+            self._ensure_tray_visible()
             return
         geo = self.frameGeometry()
         self._mini.move(geo.right() - self._mini.width(), geo.top())
@@ -396,8 +393,7 @@ class MainWindow(QWidget):
             event.accept()
             return
         event.ignore()
-        if not self._settings.ui.always_show_ui:
-            self._hide_to_mini()
+        self._hide_to_mini()
 
     def _exit_app(self) -> None:
         if self._is_exiting:

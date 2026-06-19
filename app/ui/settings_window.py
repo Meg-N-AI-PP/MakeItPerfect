@@ -91,11 +91,13 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.restore_check)
 
         # --- Window behavior ---
-        self.always_show_ui_check = QCheckBox(
-            "Always show main UI (disable minimize to floating bubble)"
+        self.minimize_to_bubble_check = QCheckBox(
+            "Minimize to floating bubble (off = minimize to tray only)"
         )
-        self.always_show_ui_check.setChecked(self._settings.ui.always_show_ui)
-        layout.addWidget(self.always_show_ui_check)
+        self.minimize_to_bubble_check.setChecked(
+            self._settings.ui.minimize_to_bubble
+        )
+        layout.addWidget(self.minimize_to_bubble_check)
 
         layout.addSpacing(6)
 
@@ -144,7 +146,9 @@ class SettingsDialog(QDialog):
         self._settings.hotkey.combination = hotkey
         self._settings.behavior.request_timeout_seconds = self.timeout_spin.value()
         self._settings.behavior.restore_clipboard = self.restore_check.isChecked()
-        self._settings.ui.always_show_ui = self.always_show_ui_check.isChecked()
+        self._settings.ui.minimize_to_bubble = (
+            self.minimize_to_bubble_check.isChecked()
+        )
 
         self._config.save()
         self.accept()
