@@ -39,6 +39,7 @@ class HotkeySettings(BaseModel):
 class UISettings(BaseModel):
     always_on_top: bool = True
     start_minimized_to_tray: bool = False
+    always_show_ui: bool = False
     theme: str = "dark"
 
 

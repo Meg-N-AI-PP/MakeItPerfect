@@ -72,6 +72,12 @@ class SettingsDialog(QDialog):
         self.models_edit.setFixedHeight(96)
         layout.addWidget(self.models_edit)
 
+        # --- Hotkey ---
+        layout.addWidget(self._field_label("Hotkey combination"))
+        self.hotkey_edit = QLineEdit(self._settings.hotkey.normalized)
+        self.hotkey_edit.setPlaceholderText("ctrl+alt+r")
+        layout.addWidget(self.hotkey_edit)
+
         # --- Timeout ---
         layout.addWidget(self._field_label("Request timeout (seconds)"))
         self.timeout_spin = QSpinBox()
@@ -83,6 +89,13 @@ class SettingsDialog(QDialog):
         self.restore_check = QCheckBox("Restore clipboard after each rewrite")
         self.restore_check.setChecked(self._settings.behavior.restore_clipboard)
         layout.addWidget(self.restore_check)
+
+        # --- Window behavior ---
+        self.always_show_ui_check = QCheckBox(
+            "Always show main UI (disable minimize to floating bubble)"
+        )
+        self.always_show_ui_check.setChecked(self._settings.ui.always_show_ui)
+        layout.addWidget(self.always_show_ui_check)
 
         layout.addSpacing(6)
 
@@ -117,12 +130,21 @@ class SettingsDialog(QDialog):
         if not models:
             models = ["gpt-4o"]
 
+        hotkey_parts = [
+            part.strip().lower()
+            for part in self.hotkey_edit.text().split("+")
+            if part.strip()
+        ]
+        hotkey = "+".join(hotkey_parts) if hotkey_parts else "ctrl+alt+r"
+
         self._settings.openai.api_key = self.key_edit.text().strip()
         self._settings.openai.available_models = models
         if self._settings.openai.default_model not in models:
             self._settings.openai.default_model = models[0]
+        self._settings.hotkey.combination = hotkey
         self._settings.behavior.request_timeout_seconds = self.timeout_spin.value()
         self._settings.behavior.restore_clipboard = self.restore_check.isChecked()
+        self._settings.ui.always_show_ui = self.always_show_ui_check.isChecked()
 
         self._config.save()
         self.accept()

@@ -47,6 +47,7 @@ class MainWindow(QWidget):
         super().__init__()
         self._config = config
         self._settings = config.settings
+        self._is_exiting = False
         self._state = AppState(
             model=self._settings.resolve_default_model(),
             mode=PromptMode.MAKE_IT_BETTER,
@@ -63,6 +64,8 @@ class MainWindow(QWidget):
         self._drag_offset: QPoint | None = None
         self._mini = MiniWidget()
         self._mini.clicked.connect(self._restore_from_mini)
+        self.tray: QSystemTrayIcon | None = None
+        self._tray_menu: QMenu | None = None
 
         self._build_ui()
         self._apply_style()
@@ -176,7 +179,8 @@ class MainWindow(QWidget):
         self.tray.setIcon(self._tray_icon())
         self.tray.setToolTip("SentenceTool")
 
-        menu = QMenu()
+        # Keep menu/actions as instance attributes so PySide does not GC them.
+        self._tray_menu = QMenu(self)
         show_action = QAction("Show", self)
         show_action.triggered.connect(self._show_window)
         start_action = QAction("Start", self)
@@ -187,15 +191,21 @@ class MainWindow(QWidget):
         settings_action.triggered.connect(self._open_settings)
         exit_action = QAction("Exit", self)
         exit_action.triggered.connect(self._exit_app)
-        menu.addAction(show_action)
-        menu.addAction(start_action)
-        menu.addAction(stop_action)
-        menu.addAction(settings_action)
-        menu.addSeparator()
-        menu.addAction(exit_action)
-        self.tray.setContextMenu(menu)
+        self._tray_menu.addAction(show_action)
+        self._tray_menu.addAction(start_action)
+        self._tray_menu.addAction(stop_action)
+        self._tray_menu.addAction(settings_action)
+        self._tray_menu.addSeparator()
+        self._tray_menu.addAction(exit_action)
+        self.tray.setContextMenu(self._tray_menu)
         self.tray.activated.connect(self._on_tray_activated)
         self.tray.show()
+
+    def _ensure_tray_visible(self) -> None:
+        if self._is_exiting or self.tray is None:
+            return
+        if not self.tray.isVisible():
+            self.tray.show()
 
     def _tray_icon(self) -> QIcon:
         icon_path = resource_path("assets/icon.ico")
@@ -226,11 +236,44 @@ class MainWindow(QWidget):
             self.startup_check.blockSignals(False)
 
     def _open_settings(self) -> None:
+        previous_hotkey = self._settings.hotkey.normalized
         dialog = SettingsDialog(self._config, parent=self)
         if dialog.exec():
             self._refresh_models()
+            self._apply_hotkey_change(previous_hotkey)
             self._set_status("Listening" if self._state.is_running else "Idle",
                              "Settings saved")
+        self._ensure_tray_visible()
+
+    def _apply_hotkey_change(self, previous_hotkey: str) -> None:
+        current_hotkey = self._settings.hotkey.normalized
+        self.hotkey_label.setText(f"Hotkey: {self._settings.hotkey.pretty}")
+
+        if current_hotkey == previous_hotkey:
+            return
+
+        was_running = self._state.is_running
+        self._hotkey.stop()
+        self._hotkey = HotkeyService(
+            combination=current_hotkey,
+            callback=self._on_hotkey,
+        )
+
+        if not was_running:
+            return
+
+        try:
+            self._hotkey.start()
+        except Exception:
+            self._state.is_running = False
+            self.start_btn.setEnabled(True)
+            self.stop_btn.setEnabled(False)
+            self._set_status("Error", "Hotkey registration failed.")
+            self.tray.showMessage(
+                "SentenceTool",
+                "Failed to apply new hotkey. Please check it in Settings.",
+                QSystemTrayIcon.MessageIcon.Warning,
+            )
 
     def _refresh_models(self) -> None:
         """Re-sync the model dropdown after the model list changed in Settings."""
@@ -321,6 +364,7 @@ class MainWindow(QWidget):
         self.show()
         self.raise_()
         self.activateWindow()
+        self._ensure_tray_visible()
 
     def _hide_to_mini(self) -> None:
         """Hide the main window and show the floating bubble instead."""
@@ -329,6 +373,7 @@ class MainWindow(QWidget):
         self._mini.show()
         self._mini.raise_()
         self.hide()
+        self._ensure_tray_visible()
 
     def _restore_from_mini(self) -> None:
         self._show_window()
@@ -338,14 +383,24 @@ class MainWindow(QWidget):
             self._show_window()
 
     def closeEvent(self, event) -> None:  # noqa: N802 - Qt signature
+        if self._is_exiting:
+            event.accept()
+            return
         event.ignore()
         self._hide_to_mini()
 
     def _exit_app(self) -> None:
+        if self._is_exiting:
+            return
+        self._is_exiting = True
         self.stop_listening()
         self._mini.hide()
-        self.tray.hide()
-        QApplication.quit()
+        if self.tray is not None:
+            self.tray.hide()
+        self.close()
+        app = QApplication.instance()
+        if app is not None:
+            app.quit()
 
     # ----- Dragging --------------------------------------------------------
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
