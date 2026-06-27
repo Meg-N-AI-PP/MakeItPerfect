@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.config.config_manager import ConfigManager
+from app.config.settings import SUPPORTED_MODELS
 
 
 class SettingsDialog(QDialog):
@@ -64,12 +65,11 @@ class SettingsDialog(QDialog):
             warn.setWordWrap(True)
             layout.addWidget(warn)
 
-        # --- Models ---
-        layout.addWidget(self._field_label("Available models (one per line)"))
-        self.models_edit = QPlainTextEdit(
-            "\n".join(self._settings.openai.available_models)
-        )
-        self.models_edit.setFixedHeight(96)
+        # --- Models (fixed, supported list) ---
+        layout.addWidget(self._field_label("Available models"))
+        self.models_edit = QPlainTextEdit("\n".join(SUPPORTED_MODELS))
+        self.models_edit.setReadOnly(True)
+        self.models_edit.setFixedHeight(72)
         layout.addWidget(self.models_edit)
 
         # --- Hotkey ---
@@ -124,13 +124,7 @@ class SettingsDialog(QDialog):
         self.show_key.setText("Hide" if shown else "Show")
 
     def _save(self) -> None:
-        models = [
-            line.strip()
-            for line in self.models_edit.toPlainText().splitlines()
-            if line.strip()
-        ]
-        if not models:
-            models = ["gpt-4o"]
+        models = list(SUPPORTED_MODELS)
 
         hotkey_parts = [
             part.strip().lower()

@@ -5,18 +5,23 @@ from typing import List
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.models.enums import ResultLanguage
+
+SUPPORTED_MODELS: List[str] = ["gpt-5.4", "gpt-5.5", "gpt-5.6"]
+DEFAULT_MODEL: str = "gpt-5.4"
+
 
 class OpenAISettings(BaseModel):
     api_key: str = ""
-    default_model: str = "gpt-5"
-    available_models: List[str] = Field(default_factory=lambda: ["gpt-5"])
+    default_model: str = DEFAULT_MODEL
+    available_models: List[str] = Field(default_factory=lambda: list(SUPPORTED_MODELS))
 
     @field_validator("available_models")
     @classmethod
-    def _non_empty_models(cls, value: List[str]) -> List[str]:
-        if not value:
-            raise ValueError("available_models must contain at least one model")
-        return value
+    def _restrict_models(cls, value: List[str]) -> List[str]:
+        """Keep only supported models; fall back to the full supported list."""
+        filtered = [model for model in value if model in SUPPORTED_MODELS]
+        return filtered or list(SUPPORTED_MODELS)
 
 
 class HotkeySettings(BaseModel):
@@ -48,6 +53,7 @@ class BehaviorSettings(BaseModel):
     paste_wait_ms: int = Field(default=80, ge=10, le=2000)
     request_timeout_seconds: int = Field(default=20, ge=1, le=120)
     restore_clipboard: bool = True
+    result_language: ResultLanguage = ResultLanguage.ENGLISH
 
 
 class StartupSettings(BaseModel):

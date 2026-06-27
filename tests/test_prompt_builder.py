@@ -1,4 +1,4 @@
-from app.models.enums import PromptMode
+from app.models.enums import PromptMode, ResultLanguage
 from app.prompts.prompt_builder import build_system_prompt, build_user_prompt
 
 
@@ -21,3 +21,20 @@ def test_user_prompt_passthrough():
 def test_mode_label_roundtrip():
     for mode in PromptMode:
         assert PromptMode.from_label(mode.label) is mode
+
+
+def test_language_instruction_injected():
+    expected = {
+        ResultLanguage.ENGLISH: "English",
+        ResultLanguage.CHINESE: "Chinese",
+        ResultLanguage.JAPANESE: "Japanese",
+        ResultLanguage.SWISS_GERMAN: "Swiss",
+    }
+    for language, token in expected.items():
+        prompt = build_system_prompt(PromptMode.MAKE_IT_BETTER, language)
+        assert token in prompt
+
+
+def test_language_label_roundtrip():
+    for language in ResultLanguage:
+        assert ResultLanguage.from_label(language.label) is language

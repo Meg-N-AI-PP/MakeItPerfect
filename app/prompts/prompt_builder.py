@@ -1,14 +1,13 @@
 """Builds prompts for each rewrite mode."""
 from __future__ import annotations
 
-from app.models.enums import PromptMode
+from app.models.enums import PromptMode, ResultLanguage
 
 _SHARED_GUARDRAILS = (
     "Return only the resulting text. "
     "Do not add explanations, labels, or commentary. "
     "Do not wrap the answer in quotation marks. "
-    "Do not use bullet points unless the original text already used them. "
-    "Preserve the original language of the text."
+    "Do not use bullet points unless the original text already used them."
 )
 
 _MODE_INSTRUCTIONS = {
@@ -26,9 +25,25 @@ _MODE_INSTRUCTIONS = {
     ),
 }
 
+_LANGUAGE_INSTRUCTIONS = {
+    ResultLanguage.ENGLISH: "Return the final text in English.",
+    ResultLanguage.CHINESE: "Return the final text in Chinese.",
+    ResultLanguage.JAPANESE: "Return the final text in Japanese.",
+    ResultLanguage.SWISS_GERMAN: (
+        "Return the final text in Swiss Standard German using Swiss spelling "
+        "conventions (for example, use 'ss' instead of 'ß')."
+    ),
+}
 
-def build_system_prompt(mode: PromptMode) -> str:
-    return f"{_MODE_INSTRUCTIONS[mode]} {_SHARED_GUARDRAILS}"
+
+def build_system_prompt(
+    mode: PromptMode,
+    result_language: ResultLanguage = ResultLanguage.ENGLISH,
+) -> str:
+    return (
+        f"{_MODE_INSTRUCTIONS[mode]} {_SHARED_GUARDRAILS} "
+        f"{_LANGUAGE_INSTRUCTIONS[result_language]}"
+    )
 
 
 def build_user_prompt(text: str) -> str:

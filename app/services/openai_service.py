@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 
-from app.models.enums import PromptMode
+from app.models.enums import PromptMode, ResultLanguage
 from app.prompts.prompt_builder import build_system_prompt, build_user_prompt
 from app.services.errors import (
     InvalidModelError,
@@ -29,8 +29,14 @@ class OpenAIService:
 
         self._client = OpenAI(api_key=api_key, timeout=timeout_seconds)
 
-    def rewrite(self, text: str, model: str, mode: PromptMode) -> str:
-        system_prompt = build_system_prompt(mode)
+    def rewrite(
+        self,
+        text: str,
+        model: str,
+        mode: PromptMode,
+        result_language: ResultLanguage = ResultLanguage.ENGLISH,
+    ) -> str:
+        system_prompt = build_system_prompt(mode, result_language)
         user_prompt = build_user_prompt(text)
 
         last_exc: Exception | None = None

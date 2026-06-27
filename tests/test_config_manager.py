@@ -3,7 +3,7 @@ import json
 import pytest
 
 from app.config.config_manager import ConfigManager
-from app.config.settings import AppSettings
+from app.config.settings import SUPPORTED_MODELS, AppSettings
 
 
 def _write(tmp_path, data):
@@ -30,15 +30,22 @@ def test_missing_file_uses_defaults(tmp_path):
     assert settings.openai.available_models
 
 
-def test_empty_models_rejected(tmp_path):
+def test_unsupported_models_are_filtered(tmp_path):
+    path = _write(tmp_path, {"openai": {"available_models": ["gpt-5", "gpt-4o"]}})
+    manager = ConfigManager(path)
+    settings = manager.load()
+    assert settings.openai.available_models == SUPPORTED_MODELS
+
+
+def test_empty_models_fall_back_to_supported(tmp_path):
     path = _write(tmp_path, {"openai": {"available_models": []}})
     manager = ConfigManager(path)
-    with pytest.raises(ValueError):
-        manager.load()
+    settings = manager.load()
+    assert settings.openai.available_models == SUPPORTED_MODELS
 
 
 def test_default_model_fallback():
     settings = AppSettings.model_validate({
-        "openai": {"default_model": "ghost", "available_models": ["gpt-4o"]}
+        "openai": {"default_model": "ghost", "available_models": ["gpt-5.5"]}
     })
-    assert settings.resolve_default_model() == "gpt-4o"
+    assert settings.resolve_default_model() == "gpt-5.5"

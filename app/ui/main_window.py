@@ -1,8 +1,15 @@
 """The floating widget window and its wiring to services."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QPoint, Signal
-from PySide6.QtGui import QAction, QIcon, QMouseEvent
+from PySide6.QtCore import Qt, QPoint, QRectF, Signal
+from PySide6.QtGui import (
+    QAction,
+    QIcon,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -22,7 +29,7 @@ from PySide6.QtWidgets import (
 from app.config.config_manager import ConfigManager
 from app.models.app_state import AppState
 from app.models.dto import RewriteResult
-from app.models.enums import PromptMode
+from app.models.enums import PromptMode, ResultLanguage
 from app.services.clipboard_service import ClipboardService
 from app.services.errors import MissingApiKeyError
 from app.services.hotkey_service import HotkeyService
@@ -51,6 +58,7 @@ class MainWindow(QWidget):
         self._state = AppState(
             model=self._settings.resolve_default_model(),
             mode=PromptMode.MAKE_IT_BETTER,
+            result_language=self._settings.behavior.result_language,
         )
         self._clipboard = ClipboardService(
             copy_wait_ms=self._settings.behavior.copy_wait_ms,
@@ -78,7 +86,7 @@ class MainWindow(QWidget):
     # ----- UI construction -------------------------------------------------
     def _build_ui(self) -> None:
         self.setWindowTitle("SentenceTool")
-        self.setFixedSize(300, 400)
+        self.setFixedSize(320, 470)
         flags = Qt.FramelessWindowHint | Qt.Tool
         if self._settings.ui.always_on_top:
             flags |= Qt.WindowStaysOnTopHint
@@ -122,6 +130,15 @@ class MainWindow(QWidget):
         self.model_combo.setCurrentText(self._state.model)
         self.model_combo.currentTextChanged.connect(self._on_model_changed)
         layout.addWidget(self.model_combo)
+
+        language_label = QLabel("Result Language")
+        language_label.setObjectName("FieldLabel")
+        layout.addWidget(language_label)
+        self.language_combo = QComboBox()
+        self.language_combo.addItems([lang.label for lang in ResultLanguage])
+        self.language_combo.setCurrentText(self._state.result_language.label)
+        self.language_combo.currentTextChanged.connect(self._on_result_language_changed)
+        layout.addWidget(self.language_combo)
 
         mode_label = QLabel("Mode")
         mode_label.setObjectName("FieldLabel")
@@ -218,6 +235,13 @@ class MainWindow(QWidget):
         self._state.model = model
         logger.info("Model changed to %s", model)
 
+    def _on_result_language_changed(self, label: str) -> None:
+        language = ResultLanguage.from_label(label)
+        self._state.result_language = language
+        self._settings.behavior.result_language = language
+        self._config.save()
+        logger.info("Result language changed to %s", language.value)
+
     def _on_mode_radio(self, checked: bool) -> None:
         if not checked:
             return
@@ -248,7 +272,7 @@ class MainWindow(QWidget):
     def _apply_hotkey_change(self, previous_hotkey: str) -> None:
         current_hotkey = self._settings.hotkey.normalized
         self.hotkey_label.setText(f"Hotkey: {self._settings.hotkey.pretty}")
-        self._mini.set_hotkey_text(self._settings.hotkey.pretty)
+        self._mini.set_hotkey_tooltip(self._settings.hotkey.pretty)
 
         if current_hotkey == previous_hotkey:
             return
@@ -455,7 +479,6 @@ class MiniWidget(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setFixedSize(58, 58)
         self.setToolTip("SentenceTool — click to open")
-
         frame = QFrame(self)
         frame.setObjectName("MiniBubble")
         frame.setGeometry(0, 0, 58, 58)
@@ -466,14 +489,51 @@ class MiniWidget(QWidget):
         self._label.setAlignment(Qt.AlignCenter)
         self._label.setWordWrap(True)
         inner.addWidget(self._label)
-        self.set_hotkey_text(hotkey_text)
+        self._set_logo_or_fallback(hotkey_text)
+        self.set_hotkey_tooltip(hotkey_text)
 
         self._press_offset: QPoint | None = None
         self._moved = False
 
+    def _set_logo_or_fallback(self, hotkey_text: str) -> None:
+        logo_path = resource_path("assets/Media/Meg.png")
+        pixmap = QPixmap(str(logo_path))
+        if not pixmap.isNull():
+            self._label.setPixmap(self._circular_pixmap(pixmap, 54))
+            self._label.setText("")
+            return
+        self.set_hotkey_text(hotkey_text)
+
+    @staticmethod
+    def _circular_pixmap(source: QPixmap, diameter: int) -> QPixmap:
+        """Return a circular crop of the source scaled to fill the circle."""
+        scaled = source.scaled(
+            diameter,
+            diameter,
+            Qt.KeepAspectRatioByExpanding,
+            Qt.SmoothTransformation,
+        )
+        x = max(0, (scaled.width() - diameter) // 2)
+        y = max(0, (scaled.height() - diameter) // 2)
+        cropped = scaled.copy(x, y, diameter, diameter)
+
+        result = QPixmap(diameter, diameter)
+        result.fill(Qt.transparent)
+        painter = QPainter(result)
+        painter.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.addEllipse(QRectF(0, 0, diameter, diameter))
+        painter.setClipPath(path)
+        painter.drawPixmap(0, 0, cropped)
+        painter.end()
+        return result
+
     def set_hotkey_text(self, hotkey_text: str) -> None:
         display = hotkey_text.replace("+", "\n+")
         self._label.setText(display)
+
+    def set_hotkey_tooltip(self, hotkey_text: str) -> None:
+        self.setToolTip(f"SentenceTool — {hotkey_text} (click to open)")
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.LeftButton:

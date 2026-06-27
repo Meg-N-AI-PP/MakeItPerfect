@@ -13,6 +13,10 @@ datas = [
 if icon_path.exists():
     datas.append(("assets/icon.ico", "assets"))
 
+logo_path = project_root / "assets" / "Media" / "Meg.png"
+if logo_path.exists():
+    datas.append(("assets/Media/Meg.png", "assets/Media"))
+
 a = Analysis(
     ["app/main.py"],
     pathex=[],

@@ -49,13 +49,15 @@ class RewriteService:
             if not selected.strip():
                 raise NoSelectionError()
 
-            logger.info("Rewriting %d chars with model=%s mode=%s",
-                        len(selected), self._state.model, self._state.mode.value)
+            logger.info("Rewriting %d chars with model=%s mode=%s lang=%s",
+                        len(selected), self._state.model, self._state.mode.value,
+                        self._state.result_language.value)
 
             rewritten = self._openai.rewrite(
                 text=selected,
                 model=self._state.model,
                 mode=self._state.mode,
+                result_language=self._state.result_language,
             )
             if not rewritten.strip():
                 raise RewriteError("Empty response from AI.")

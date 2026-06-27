@@ -27,6 +27,31 @@ class PromptMode(str, Enum):
         raise ValueError(f"Unknown mode label: {label}")
 
 
+class ResultLanguage(str, Enum):
+    """The destination language for the rewritten text."""
+
+    ENGLISH = "english"
+    CHINESE = "chinese"
+    JAPANESE = "japanese"
+    SWISS_GERMAN = "swiss_german"
+
+    @property
+    def label(self) -> str:
+        return {
+            ResultLanguage.ENGLISH: "English",
+            ResultLanguage.CHINESE: "Chinese",
+            ResultLanguage.JAPANESE: "Japanese",
+            ResultLanguage.SWISS_GERMAN: "Swiss German",
+        }[self]
+
+    @classmethod
+    def from_label(cls, label: str) -> "ResultLanguage":
+        for language in cls:
+            if language.label == label:
+                return language
+        raise ValueError(f"Unknown language label: {label}")
+
+
 class AppStatus(str, Enum):
     """High-level lifecycle states surfaced to the UI."""
 

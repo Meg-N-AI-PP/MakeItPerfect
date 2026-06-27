@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.models.enums import PromptMode
+from app.models.enums import PromptMode, ResultLanguage
 
 
 @dataclass
@@ -12,4 +12,5 @@ class AppState:
 
     model: str
     mode: PromptMode = PromptMode.MAKE_IT_BETTER
+    result_language: ResultLanguage = ResultLanguage.ENGLISH
     is_running: bool = False

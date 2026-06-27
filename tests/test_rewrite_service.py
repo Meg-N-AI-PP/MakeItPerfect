@@ -28,7 +28,7 @@ class FakeOpenAI:
         self._response = response
         self._error = error
 
-    def rewrite(self, text, model, mode):
+    def rewrite(self, text, model, mode, result_language=None):
         if self._error:
             raise self._error
         return self._response
